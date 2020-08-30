@@ -19,10 +19,16 @@ int enB = 5;
 int en3 = 7;
 int en4 = 6;
 
-int echoPin = 3;
-int trigPin = 11;
+int avoidance_front = 0;
+int avoidance_rear = 1;
 
-bool debug = true;
+int echoPin = 3;
+int trigPin = 1;
+
+// need to set it to false when go live because we are using serial pin and may impact readings
+bool debug = false;
+
+bool allowForward = true;
 
 void setup() {
   pinMode(trigPin, OUTPUT);
@@ -33,18 +39,27 @@ void setup() {
   pinMode(en2, OUTPUT);
   pinMode(en3, OUTPUT);
   pinMode(en4, OUTPUT);
-  Serial.begin(9600);
+  pinMode(avoidance_front, INPUT);
+  pinMode(avoidance_rear, INPUT);
+
+  if (debug) {
+    Serial.begin(9600);  
+  }
+  
   if (!manager.init()){
-    Serial.println("init failed");
+    if (debug) {
+      Serial.println("init failed");  
+    }
+    
   } else {
-    Serial.println("init Success");
+    if (debug) {
+      Serial.println("init Success");
+    }
   }
 }
 uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
 
 void loop() {
-  //demoMode();
-  //return;
   
   if (manager.available())
   {
@@ -56,6 +71,8 @@ void loop() {
       Move(buf);
     }
   }
+  //manageAvoidance();
+  delay(10);
 }
 
 void Move(uint8_t buf[2]) {
@@ -68,9 +85,9 @@ void Move(uint8_t buf[2]) {
     
   }
   int wheelSpeed = 0;
-  if (buf[0] >= 132 || buf[0] <= 128) { // give a bit to make sure it considers the gap when it is not using
+  if (buf[0] != 129) { // give a bit to make sure it considers the gap when it is not using
     // just move forward or reverse
-    if ( buf[0] >= 132 ) {
+    if ( buf[0] >= 129 ) {
       wheelSpeed = map(buf[0], 132, 255, 0, 255);
       MoveForward('Z', wheelSpeed);
     } else {
@@ -81,7 +98,7 @@ void Move(uint8_t buf[2]) {
     Stop('Z');
   }
 
-  if (buf[1] >= 132 || buf[1] <= 128){
+  if (buf[1] != 129){
     turn(buf[1]);
   }
 }
@@ -89,14 +106,14 @@ void Move(uint8_t buf[2]) {
 void turn(uint8_t buf) {
     int wheelSpeed = 0;
     
-    if ( buf >= 132 ) { // right
-      wheelSpeed = map(buf, 132, 255, 0, 255);
+    if ( buf >= 129 ) { // right
+      wheelSpeed = map(buf, 129, 255, 0, 255);
       analogWrite(enA,wheelSpeed);
       digitalWrite(en1, HIGH);
       digitalWrite(en2, LOW);
 
     } else { // left
-      wheelSpeed = map(buf, 132, 0, 0, 255);
+      wheelSpeed = map(buf, 129, 0, 0, 255);
       digitalWrite(en3, HIGH);
       digitalWrite(en4, LOW);
       analogWrite(enB,wheelSpeed);
@@ -104,6 +121,9 @@ void turn(uint8_t buf) {
 }
 
 void MoveForward(char side, int wheelSpeed) {
+  if (!allowForward) {
+    wheelSpeed = 0;
+  }
   switch(side) {
     case 'A':
       analogWrite(enA,wheelSpeed);
@@ -126,7 +146,10 @@ void MoveForward(char side, int wheelSpeed) {
 }
 
 void Wheel(bool reverse , char side, int wheelSpeed) {
-  Serial.println(wheelSpeed);
+  if(debug) {
+    Serial.println(wheelSpeed);
+  }
+  
   if (reverse){
     Reverse(side, wheelSpeed);
   } else {
@@ -149,6 +172,7 @@ void Stop(char side) {
 }
 
 void Reverse(char side, int wheelSpeed) {
+
   if(side == 'A') {
     analogWrite(enA,wheelSpeed);
   } else {
@@ -156,7 +180,7 @@ void Reverse(char side, int wheelSpeed) {
   }
   switch(side) {
     case 'A':
-      analogWrite(enA,wheelSpeed);
+        analogWrite(enA,wheelSpeed);
       digitalWrite(en1, LOW);
       digitalWrite(en2, HIGH);
       break;
@@ -197,12 +221,19 @@ void manageAvoidance() {
   digitalWrite(trigPin, LOW);
   duration = pulseIn(echoPin, HIGH);
   distance = (duration/2)/29.1;
-  Serial.println(duration);
-  if(distance > 25) {
-    Wheel(true, 'Z', 255); // forward
-  } else {
-    flip(255);
-    delay(1000);
-    Wheel(true, 'Z', 255); // forward
+  if (debug) {
+    Serial.print("Distance: ");
+    Serial.println(distance);  
   }
+  if(distance > 25) {
+    allowForward = false;
+  }
+  
+  //if(distance > 25) {
+  //  Wheel(true, 'Z', 255); // forward
+  //} else {
+  //  flip(255);
+  //  delay(1000);
+  //  Wheel(true, 'Z', 255); // forward
+  //}
 }

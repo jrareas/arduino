@@ -4,7 +4,7 @@
 #include <LiquidCrystal.h>
 #include <Wire.h>
 #include <TimeLib.h>
-#include <DS3231.h>
+#include <DS3232RTC.h>
 #include <dht_nonblocking.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -91,45 +91,20 @@ const char *monthName[12] = {
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
-DS3231  rtc(SDA, SCL);
+const char *weekDayName[7] = {
+  "Sun","Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+};
+
+DS3232RTC  rtc(false);
 
 
 bool setuptime = false;
 
 void setTimeDevice() {
   if (setuptime) {
-    setTime(__TIME__);
-    setDate(__DATE__);
+    rtc.set(now());
   }
 }
-
-bool setTime(const char *str)
-{
-  int Hour, Min, Sec;
-
-  if (sscanf(str, "%d:%d:%d", &Hour, &Min, &Sec) != 3) exit;
-
-  rtc.setTime(Hour, Min, Sec);
-
-  return true;
-}
-
-void setDate(const char *str)
-{
-  char Month[12];
-  int Day, Year;
-  uint8_t monthIndex;
-
-  if (sscanf(str, "%s %d %d", Month, &Day, &Year) != 3) exit;
-  
-  for (monthIndex = 0; monthIndex < 12; monthIndex++) {
-    if (strcmp(Month, monthName[monthIndex]) == 0) break;
-  }
-  if (monthIndex >= 12) exit;
-
-  rtc.setDate(Day, monthIndex + 1, Year);
-}
-
 /*
  * Initialize the serial port.
  */
@@ -175,24 +150,29 @@ void initDisplay() {
 }
 
 void writeTimeToDisplay() {
-  Time  t = rtc.getTime();
+  tmElements_t tm;
+  RTC.read(tm);
   display.setCursor(0,0);
-  printDigits(t.hour);
+  printDigits(tm.Hour);
   display.print(":");
-  printDigits(t.min);
+  printDigits(tm.Minute);
   // take the seconds out until i figure out the delay issue
   //display.print(":");
   //printDigits(t.sec);
 }
 
 void writeDateToDisplay() {
+  char buff[40];
+  time_t t = RTC.get();
+
+  sprintf(buff, "%s, %.2d %s, %d ",
+        weekDayName[weekday(t) - 1], day(t), monthShortStr(month(t)), year(t));
   display.setCursor(0,12);
-  display.print(rtc.getDOWStr());
-  display.print(", ");
-  display.print(rtc.getDateStr());
+  display.print(buff);
 }
 
 void printDigits(int digits) {
+  
  if (digits < 10) {
   display.print('0'); 
  }

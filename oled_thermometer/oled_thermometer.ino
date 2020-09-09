@@ -2,15 +2,17 @@
 //2018.10.25
 
 #include <LiquidCrystal.h>
+#include <LowPower.h>
 #include <Wire.h>
 #include <TimeLib.h>
 #include <DS3232RTC.h>
 #include <dht_nonblocking.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include <Fonts/FreeSans9pt7b.h>
 #define DHT_SENSOR_TYPE DHT_TYPE_11
 #define OLED_RESET 4
+
+#include <Fonts/FreeSerif9pt7b.h>
 
 #define NUMFLAKES     10
 
@@ -40,11 +42,14 @@ const unsigned char battery_full[] PROGMEM = {
 
 
 const unsigned char battery_empty[] PROGMEM = {
-  B11111111,B10000000,
-  B10000000,B11000000,
-  B10000000,B01000000,
-  B10000000,B11000000,
-  B11111111,B10000000
+  B11111111,B11111110,
+  B10000000,B00000010,
+  B10000000,B00000011,
+  B10000000,B00000011,
+  B10000000,B00000011,
+  B10000000,B00000011,
+  B10000000,B00000010,
+  B11111111,B11111110
 };
 
 
@@ -180,6 +185,9 @@ void printDigits(int digits) {
  display.print(digits);
 }
 
+void goingToSleep() {
+  LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF); 
+}
 /*
  * Main program loop.
  */
@@ -202,10 +210,8 @@ void loop( )
     display.print(humidity);
     display.print(" %");
     display.display();
+    goingToSleep();
   }
-    
-  
-  delay(10);
 }
 
 byte batterylevel()
@@ -237,6 +243,11 @@ byte batterylevel()
   {
     display.drawBitmap(POS,0,battery_empty, W, H, WHITE);
   }
+  display.setCursor(50, 0);
+  display.print(curvolt);
+  display.setCursor(78, 0);
+  display.print("V");
+    
 }
 //read internal voltage
 long readVcc() {

@@ -3,8 +3,11 @@
 #include <RH_NRF24.h>
 #include <RHReliableDatagram.h>
 #include <dht_nonblocking.h>
+#include "mySleep.h"
 
-static const int DHT_SENSOR_PIN = 2;
+static const int DHT_SENSOR_PIN = 5;
+#define DHT_POWER_PIN 6
+#define NRF_POWER_PIN 4
 DHT_nonblocking dht_sensor( DHT_SENSOR_PIN, DHT_TYPE_11 );
 
 RH_NRF24 nrf24;
@@ -15,21 +18,18 @@ RHReliableDatagram manager(nrf24, SERVER_ADDRESS);
 
 float temperature;
 float humidity;
-
+mySleep mySleep;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
+  pinMode(DHT_POWER_PIN, OUTPUT);
+  pinMode(NRF_POWER_PIN, OUTPUT);
+  digitalWrite(NRF_POWER_PIN, HIGH);
+  delay(200);
+
   if (!manager.init())
       Serial.println("init failed");
-/*
-  if (!nrf24.init())
-    Serial.println("init failed");
-  // Defaults after init are 2.402 GHz (channel 2), 2Mbps, 0dBm
-  if (!nrf24.setChannel(2))
-    Serial.println("setChannel failed");
-  if (!nrf24.setRF(RH_NRF24::DataRate2Mbps, RH_NRF24::TransmitPower0dBm))
-    Serial.println("setRF failed");  
-    */
+  mySleep.begin();
 }
 uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
 
@@ -55,6 +55,9 @@ void sendData() {
       Serial.print(from, HEX);
       Serial.print(": ");
       Serial.println((char*)buf);
+      Serial.println("going to sleep");
+      delay(200);
+      mySleep.goToSleep();
     }
     else
     {
@@ -66,6 +69,8 @@ void sendData() {
 }
 
 void loop() {
+  digitalWrite(DHT_POWER_PIN, HIGH);
+  digitalWrite(NRF_POWER_PIN, HIGH);
   if(read100TimesOrReady()){
     sendData();  
   }

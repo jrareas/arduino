@@ -22,7 +22,7 @@ void initmytft() {
 void printmsg(uint16_t column, uint16_t row, int textSize, int textColor, const char *msg)
 {
   tft.setTextSize(textSize);
-  tft.setTextColor(RED);
+  tft.setTextColor(WHITE);
   tft.setCursor(column, row);
   tft.println(msg);
 }
@@ -79,9 +79,9 @@ void timeBlock(String time, String date) {
     battery();
     char buff[40];
     date.toCharArray(buff, 40);
-    printmsg(80, 10, 3, RED ,buff);
+    printmsg(80, 10, 3, WHITE ,buff);
     time.toCharArray(buff, 40);
-    printmsg(80, 60, 10, RED ,buff);
+    printmsg(80, 60, 10, WHITE ,buff);
     last_read[0] = (String)time;
     last_read[1] = (String)date;
   }
@@ -109,12 +109,12 @@ void inBlock(String temp, String hum) {
     initBlock(wid/2, ht/2, wid/2 , ht/2);
     tft.drawRect(wid/2, ht/2, 50 , 35, YELLOW);
     
-    printmsg((wid/2) + 10, 10 + (ht/2), 2, RED, "In");
+    printmsg((wid/2) + 10, 10 + (ht/2), 2, WHITE, "In");
     char buff[3];
     temp.toCharArray(buff, 3);
-    printmsg((wid/2) + 80, 10 + (ht/2) + 10, 7, RED, buff);
+    printmsg((wid/2) + 80, 10 + (ht/2) + 10, 7, WHITE, buff);
     hum.toCharArray(buff, 3);
-    printmsg((wid/2) + 80, 10 + (ht/2) + 80, 7, RED, buff);
+    printmsg((wid/2) + 80, 10 + (ht/2) + 80, 7, WHITE, buff);
   
     tempHumIcons(440, 20 + (ht/2));
     last_read[0] = (String)temp;

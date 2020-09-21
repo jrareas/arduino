@@ -25,7 +25,7 @@
 #define RADIO
 #define READIN
 
-static const int DHT_SENSOR_PIN = 0;
+static const uint8_t DHT_SENSOR_PIN = 0;
 DHT_nonblocking dht_sensor( DHT_SENSOR_PIN, DHT_SENSOR_TYPE );
 
 float temp;
@@ -34,7 +34,7 @@ String str_out;
 String str_humid;
 String str_temp;
 
-const char *weekDayName[7] = {
+const unsigned char *weekDayName[7] = {
   "Sun","Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 };
 #ifdef RADIO

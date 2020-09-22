@@ -8,6 +8,10 @@
 //#define MYTFT_SERIAL
 
 MCUFRIEND_kbv tft;
+
+void initializeBlock(uint16_t x, uint16_t y, uint16_t w, uint16_t h, char label[4]);
+void clearArea(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
+
 uint16_t wid, ht;
 void initmytft() {
     uint16_t ID = tft.readID(); //
@@ -17,6 +21,9 @@ void initmytft() {
     tft.setRotation(1);
     wid = tft.width();
     ht = tft.height();
+    initializeBlock(0, ht/2, wid/2 , ht/2, "Out"); //out
+    initializeBlock(wid/2, ht/2, wid/2 , ht/2, "In"); //in
+    initializeBlock(0, 0, wid , ht/2, ""); // time
 }
 
 void printmsg(uint16_t column, uint16_t row, int textSize, int textColor, const char *msg)
@@ -45,7 +52,10 @@ long readVcc() {
 void battery() {   
   double curvolt = double( readVcc() ) / 1000;
   
-  if(curvolt > 3.75)
+  if(curvolt >= 4.2) {
+    tft.drawBitmap(450, 10, battery_full, 16, 8, WHITE); 
+  }
+  else if(curvolt >= 3.75)
   {
     tft.drawBitmap(450, 10, battery_half, 16, 8, WHITE); 
   } 
@@ -66,16 +76,14 @@ void battery() {
   //}
 }
 
-void initBlock(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
-    tft.fillRect(x, y, w , h, BACKGROUND);
-    tft.drawRect(x, y, w , h, YELLOW);  
-}
 
 void timeBlock(String time, String date) {
   static String last_read[2] = {"", ""};
   //static String last_time = "", last_date = "";
   if ((String)time != last_read[0] || (String)date != last_read[1]) {
-    initBlock(0, 0, wid , ht/2);
+    clearArea (50,9, 380, 140); // full
+    //clearArea (50,9, 380, 30); // date
+    //clearArea (50,40, 380, 110); // time
     battery();
     char buff[40];
     date.toCharArray(buff, 40);
@@ -85,11 +93,6 @@ void timeBlock(String time, String date) {
     last_read[0] = (String)time;
     last_read[1] = (String)date;
   }
-}
-
-void drawTempHumidBlock(uint8_t x, uint8_t y, uint8_t startx, uint8_t starty ) {
-    tft.fillRect(x, y, startx , starty, BACKGROUND);
-    tft.drawRect(x, y, startx , starty, YELLOW);
 }
 
 void tempHumIcons(uint16_t x, uint16_t y) {
@@ -106,17 +109,15 @@ void inBlock(String temp, String hum) {
     Serial.print(" H: ");
     Serial.println(hum);
     #endif
-    initBlock(wid/2, ht/2, wid/2 , ht/2);
-    tft.drawRect(wid/2, ht/2, 50 , 35, YELLOW);
-    
-    printmsg((wid/2) + 10, 10 + (ht/2), 2, WHITE, "In");
+    clearArea (wid/2 + 60,ht/2 + 10, 120, 140);
+
     char buff[3];
     temp.toCharArray(buff, 3);
     printmsg((wid/2) + 80, 10 + (ht/2) + 10, 7, WHITE, buff);
     hum.toCharArray(buff, 3);
     printmsg((wid/2) + 80, 10 + (ht/2) + 80, 7, WHITE, buff);
   
-    tempHumIcons(440, 20 + (ht/2));
+    //tempHumIcons(440, 20 + (ht/2));
     last_read[0] = (String)temp;
     last_read[1] = (String)hum;
   }
@@ -124,13 +125,12 @@ void inBlock(String temp, String hum) {
 
 void outBlock(String temp, String hum)  {
   static String last_read[2] = {"", ""};
-  //static String last_hum_out = "", last_temp_out = "";
   if ((String)temp != last_read[0] || (String)hum != last_read[1]) {
-    initBlock(0, ht/2, wid/2 , ht/2);
-    printmsg(10, 10 + (ht/2), 2, RED, "Out");
-    tft.drawRect(0, ht/2, 50 , 35, YELLOW);
-    tempHumIcons(200, 20 + (ht/2));
-  
+    //printmsg(10, 10 + (ht/2), 2, RED, "Out");
+    
+    //tempHumIcons(200, 20 + (ht/2));
+    clearArea (60,ht/2 + 10, 120, 140);
+    
     char buff[3];
     temp.toCharArray(buff, 3);
     printmsg(80, 10 + (ht/2) + 10, 7, YELLOW, buff);
@@ -139,4 +139,18 @@ void outBlock(String temp, String hum)  {
     last_read[0] = (String)temp;
     last_read[1] = (String)hum;
   }
+}
+
+void initializeBlock(uint16_t x, uint16_t y, uint16_t w, uint16_t h, char label[4]) {
+  clearArea(x, y, w , h);
+  tft.drawRect(x, y, w , h, YELLOW); 
+  tempHumIcons(x + 200, 20 + y);
+  if (strlen(label) !=0) {
+    tft.drawRect(x, y, 50 , 35, YELLOW);
+    printmsg(x + 10, y + 10 , 2, RED, label);
+  }
+}
+
+void clearArea(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+  tft.fillRect(x, y, w , h, BACKGROUND);
 }
